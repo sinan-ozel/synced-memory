@@ -1,0 +1,86 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f", "${workspaceFolder}/tests/docker-compose.yaml",
+        "--project-directory", "${workspaceFolder}/tests",
+        "up",
+        "--build",
+        "--abort-on-container-exit",
+        "--exit-code-from", "test"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "lint",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f", "${workspaceFolder}/lint/docker-compose.yaml",
+        "--project-directory", "${workspaceFolder}/lint",
+        "up",
+        "--build",
+        "--abort-on-container-exit",
+        "--exit-code-from", "linter"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "reformat",
+      "type": "shell",
+      "command": "docker compose -f reformat/docker-compose.yaml up --build --abort-on-container-exit",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "validate-docs",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f", "${workspaceFolder}/docs-validate/docker-compose.yaml",
+        "--project-directory", "${workspaceFolder}/docs-validate",
+        "up",
+        "--build",
+        "--abort-on-container-exit",
+        "--exit-code-from", "docs-validator"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}
+
+

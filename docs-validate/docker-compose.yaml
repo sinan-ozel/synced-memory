@@ -1,0 +1,10 @@
+services:
+  docs-validator:
+    build:
+      context: ..
+      dockerfile: docs-validate/Dockerfile
+    image: synced-memory-docs-validate:latest
+    working_dir: /workspace
+    volumes:
+      - ${HOST_PROJECT_PATH:-..}:/workspace
+    command: mkdocs build --strict

@@ -1,0 +1,27 @@
+services:
+  test:
+    build:
+      context: ..
+      dockerfile: tests/Dockerfile
+    image: synced-memory-tests
+    command: pytest tests/
+    working_dir: /app
+    environment:
+      - MEMORY_LOG_LEVEL=DEBUG
+    depends_on:
+      - redis
+      - dragonflydb
+    volumes:
+      - ../tests:/app/tests
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  dragonflydb:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    ports:
+      - "6380:6379"
+    restart: unless-stopped
