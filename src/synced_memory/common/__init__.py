@@ -2,10 +2,7 @@ import json
 import os
 import threading
 import time
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    import redis as _redis
+from typing import Any
 
 
 class SyncedList(list):
@@ -81,7 +78,7 @@ class SyncedDict(dict):
 
 
 def wrap_sync(obj: list | dict, parent, topmost_key: str):
-    """Wrap an object to synchronize its attributes with Redis."""
+    """Wrap an object to synchronize its attributes with the backend."""
     if isinstance(obj, dict):
         return SyncedDict(obj, parent, topmost_key)
     elif isinstance(obj, list):
@@ -90,49 +87,33 @@ def wrap_sync(obj: list | dict, parent, topmost_key: str):
 
 
 class MemoryBase:
-    """A synchronized key-value store that uses a Redis-compatible backend
-    (Redis or DragonflyDB) as shared memory. If the backend is unavailable,
-    values are cached locally and queued for later syncing.
+    """A synchronized key-value store backed by a Redis-compatible server.
+
+    If the backend is unavailable, values are cached locally and queued for
+    syncing when it comes back online.
 
     Environment Variables:
     ----------------------
-    - REDIS_HOST:   Hostname of the backend server (default: 'localhost')
-    - REDIS_PORT:   Port of the backend server (default: 6379)
-    - REDIS_PREFIX: Prefix to use for keys (default: 'memory:')
+    - REDIS_HOST:  Hostname of the backend server
+    - REDIS_PORT:  Port of the backend server
 
     Attributes:
     -----------
     _timeout : float
         Timeout for backend operations in seconds (default: 0.5).
     _queue : list
-        Queue of (key, value) tuples to be synced when the backend becomes
-        available.
+        Queue of (key, value) tuples to be synced when backend is available.
     _attributes : dict
-        Local cache of attributes (always up-to-date with the last set values).
-
-    Examples:
-    ---------
-    >>> os.environ['REDIS_HOST'] = 'localhost'
-    >>> os.environ['REDIS_PORT'] = '6379'
-
-    >>> mem1 = MemoryBase(backend_hostname='localhost')
-    >>> mem1.foo = 42
-    >>> mem2 = MemoryBase(backend_hostname='localhost')
-    >>> print(mem2.foo)
-    42
-
-    >>> mem1.bar = {"a": 1}
-    >>> print(mem2.bar)
-    {'a': 1}
+        Local cache of attributes.
     """
 
     def __init__(
         self,
-        backend_hostname: str,
+        backend_hostname: str = "redis",
         backend_port: int = 6379,
         backend_prefix: str = "memory:",
     ):
-        """Initialize the Memory instance and flush any queued updates."""
+        """Initialize the MemoryBase instance and flush any queued updates."""
         self._host = os.environ.get("REDIS_HOST", backend_hostname)
         self._port = int(os.environ.get("REDIS_PORT", backend_port))
         self._prefix = backend_prefix
@@ -140,18 +121,15 @@ class MemoryBase:
 
         self._queue = []
         self._attributes = {}
-        self._last_modified = {}  # Track last modified timestamps
+        self._last_modified = {}
 
         self._stop_event = threading.Event()
         self._thread = None
 
-        self._redis_available = (
-            False  # owned exclusively by the background thread
-        )
+        self._redis_available = False
         self._is_connected_to_redis_at_least_once = False
 
         self.start_background_flush()
-
         self._load_from_redis()
 
     def __enter__(self):
@@ -167,17 +145,16 @@ class MemoryBase:
                     break
                 except Exception:
                     if not self._is_connected_to_redis_at_least_once:
-                        break  # Never connected; give up.
+                        break
                     time.sleep(1)
 
         self.stop_background_flush()
 
-    def _connect(self) -> "_redis.Redis":
-        """Establish a new Redis connection.
+    def _connect(self):
+        """Establish a new backend connection.
 
         Returns:
-            redis.Redis or None: A Redis client if connection works;
-            otherwise None.
+            redis.Redis: A client if connection works; raises on failure.
         """
         import redis
 
@@ -191,7 +168,7 @@ class MemoryBase:
         return client
 
     def _key(self, name):
-        """Generate Redis key with prefix."""
+        """Generate backend key with prefix."""
         return f"{self._prefix}{name}"
 
     def _flush_queue(self):
@@ -201,7 +178,7 @@ class MemoryBase:
         each queued item, skips writes where the backend already holds a newer
         timestamp.
         """
-        client = self._connect()  # raises on failure
+        client = self._connect()
         self._is_connected_to_redis_at_least_once = True
 
         while self._queue:
@@ -226,16 +203,16 @@ class MemoryBase:
     def _background_flush_loop(self):
         """Own the backend connection state and flush the write queue.
 
-        On each cycle this thread attempts to connect and flush any
-        queued writes. Success sets _redis_available = True and resets
-        the backoff to 1 s. Failure sets _redis_available = False and
-        doubles the wait (capped at 30 s), so the main thread can fall
-        back to local cache without blocking.
+        On each cycle this thread attempts to connect and flush any queued
+        writes. Success sets _redis_available = True and resets the backoff to
+        1 s. Failure sets _redis_available = False and doubles the wait (capped
+        at 30 s), so the main thread can fall back to local cache without
+        blocking.
         """
         backoff = 1
         while not self._stop_event.is_set():
             try:
-                self._flush_queue()  # raises on connection failure
+                self._flush_queue()
                 self._redis_available = True
                 backoff = 1
             except Exception:
@@ -289,12 +266,10 @@ class MemoryBase:
             self._redis_available = False
 
     def __setattr__(self, name, value):
-        """Set an attribute.
-
-        Store in the backend if available, otherwise queue it.
+        """Set an attribute. Store in backend if available, otherwise queue it.
 
         Raises:
-            ValueError: If the value is not serializable.
+            TypeError: If the value is not JSON-serializable.
         """
         if name.startswith("_"):
             super().__setattr__(name, value)
@@ -302,17 +277,15 @@ class MemoryBase:
 
         try:
             _ = json.dumps(value)
-        except json.JSONDecodeError:
-            raise
+        except (TypeError, ValueError):
+            raise TypeError(
+                f"Value for '{name}' is not JSON-serializable: {type(value)}"
+            )
 
         self._set(name, value)
 
     def _write_to_redis_or_queue(self, name: str, payload: dict):
-        """Write to the backend if available; queue for later if not.
-
-        On a connection failure the flag is cleared so subsequent calls skip
-        the attempt until the background thread re-establishes the connection.
-        """
+        """Write to backend if available; queue for later if not."""
         if self._redis_available:
             try:
                 client = self._connect()
@@ -324,7 +297,7 @@ class MemoryBase:
         self._queue.append((name, payload))
 
     def _set(self, name: str, value: Any):
-        """Update local cache and write through to the backend (or queue if
+        """Update local cache and write through to backend (or queue if
         down)."""
         self._attributes[name] = wrap_sync(value, self, name)
         timestamp = time.time_ns()
@@ -334,10 +307,7 @@ class MemoryBase:
         )
 
     def __getattr__(self, name: str) -> Any:
-        """Return the attribute, reading from the backend when available.
-
-        Falls back to local cache when the backend is down so the main thread
-        never blocks.
+        """Return the attribute, reading from backend when available.
 
         Raises:
             AttributeError: If the attribute has not been set.
@@ -356,24 +326,18 @@ class MemoryBase:
                     self._attributes[name] = wrap_sync(value, self, name)
                     self._last_modified[name] = obj["last_modified"]
                     return self._attributes[name]
-                # Backend is up but key not there yet (still in queue);
-                # fall through to local cache.
             except Exception:
                 self._redis_available = False
 
         if name in self._attributes:
             return self._attributes[name]
-        raise AttributeError(
-            f"'{type(self).__name__}' object has no attribute '{name}'"
-        )
+        raise AttributeError(f"'Memory' object has no attribute '{name}'")
 
     def sync(self, name: str):
-        """Write the current local value of an attribute to the backend (or
-        queue if down)."""
+        """Write the current local value of an attribute to backend (or queue
+        if down)."""
         if name not in self._attributes:
-            raise AttributeError(
-                f"'{type(self).__name__}' object has no attribute '{name}'"
-            )
+            raise AttributeError(f"'Memory' object has no attribute '{name}'")
 
         self._write_to_redis_or_queue(
             name,
@@ -394,9 +358,7 @@ class MemoryBase:
             return
 
         if name not in self._attributes:
-            raise AttributeError(
-                f"'{type(self).__name__}' object has no attribute '{name}'"
-            )
+            raise AttributeError(f"'Memory' object has no attribute '{name}'")
 
         del self._attributes[name]
         if name in self._last_modified:
@@ -415,23 +377,23 @@ class MemoryBase:
 
 
 class PrefixedMemoryBase(MemoryBase):
-    """MemoryBase subclass that namespaces keys by a custom prefix.
+    """MemoryBase subclass that namespaces keys by a scope prefix.
 
     Args:
-        prefix (str): Scope prefix to isolate this Memory instance's keys.
+        prefix (str): Unique prefix to isolate this scope's memory.
         backend_hostname (str): Backend host.
-        backend_port (int): Backend port (default 6379).
-        backend_prefix (str): Base prefix for keys (default 'memory:').
+        backend_port (int): Backend port.
+        backend_prefix (str): Base key prefix.
     """
 
     def __init__(
         self,
         prefix: str,
-        backend_hostname: str,
+        backend_hostname: str = "redis",
         backend_port: int = 6379,
         backend_prefix: str = "memory:",
     ):
-        self._prefix_id = prefix
+        self._scope = prefix
         super().__init__(
             backend_hostname=backend_hostname,
             backend_port=backend_port,
@@ -439,5 +401,13 @@ class PrefixedMemoryBase(MemoryBase):
         )
 
     def _key(self, name):
-        # Override to include prefix_id in the key
-        return f"{self._prefix}{self._prefix_id}:{name}"
+        return f"{self._prefix}{self._scope}:{name}"
+
+
+__all__ = [
+    "MemoryBase",
+    "PrefixedMemoryBase",
+    "SyncedList",
+    "SyncedDict",
+    "wrap_sync",
+]

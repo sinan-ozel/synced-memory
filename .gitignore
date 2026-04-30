@@ -1,5 +1,6 @@
 **/__pycache__
 site/
 **/*.egg-info
-_*.*
+_existing_*.*
+_implementation.*
 build
