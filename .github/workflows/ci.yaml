@@ -24,6 +24,8 @@ jobs:
           fetch-depth: 0
 
       - name: Run Reformat with Docker Compose
+        env:
+          CHECK_ONLY: ${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
         run: |
           docker compose -f reformat/docker-compose.yaml up --build --abort-on-container-exit
 
