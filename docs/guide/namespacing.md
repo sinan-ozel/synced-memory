@@ -8,7 +8,8 @@ or tenants to share the same backend without key collisions.
 By default the prefix is `memory:`:
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 mem = Memory()
 mem.counter = 1
@@ -29,10 +30,10 @@ mem.counter = 1
 
 ## Custom Prefix via Constructor
 
-Pass `redis_prefix` directly:
+Pass `db_prefix` directly:
 
 ```python
-mem = Memory(redis_prefix="session_123:")
+mem = Memory(db_prefix="session_123:")
 mem.value = "hello"
 # Stored as: session_123:value
 ```
@@ -40,12 +41,13 @@ mem.value = "hello"
 ## Multi-Tenant Applications
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
-mem1 = Memory(redis_prefix="tenant1:")
+mem1 = Memory(db_prefix="tenant1:")
 mem1.data = "tenant 1 data"
 
-mem2 = Memory(redis_prefix="tenant2:")
+mem2 = Memory(db_prefix="tenant2:")
 mem2.data = "tenant 2 data"
 
 print(mem1.data)  # "tenant 1 data"
@@ -56,10 +58,11 @@ print(mem2.data)  # "tenant 2 data"
 
 ```python
 import os
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 env = os.getenv('ENVIRONMENT', 'development')
-mem = Memory(redis_prefix=f'{env}:')
+mem = Memory(db_prefix=f'{env}:')
 mem.config = {"env": env}
 # development:config, staging:config, production:config
 ```

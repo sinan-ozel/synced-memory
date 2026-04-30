@@ -3,13 +3,14 @@
 ## Creating a Memory Instance
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 mem = Memory()
 ```
 
-By default, `Memory` connects to `redis:6379` and uses the prefix `memory:`.
-Use `synced_memory.dragonflydb` instead to connect to a DragonflyDB instance.
+By default, `Memory` connects to `redis:6379` (or `dragonflydb:6379` for the DragonflyDB
+backend) and uses the prefix `memory:`.
 
 ## Setting Values
 
@@ -88,7 +89,8 @@ print(mem.persistent_value)  # "I will survive!"
 
 ```python
 from multiprocessing import Process
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 def worker(worker_id):
     mem = Memory()

@@ -1,6 +1,24 @@
 # API Reference
 
-## Classes
+## Base Classes
+
+### MemoryBase
+
+::: synced_memory.common.MemoryBase
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+### PrefixedMemoryBase
+
+::: synced_memory.common.PrefixedMemoryBase
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+## Redis Backend
 
 ### Memory
 
@@ -10,17 +28,37 @@
       show_source: true
       heading_level: 3
 
-### ConversationMemory
+### PrefixedMemory
 
-::: synced_memory.redis.ConversationMemory
+::: synced_memory.redis.PrefixedMemory
     options:
       show_root_heading: true
       show_source: true
       heading_level: 3
 
+## DragonflyDB Backend
+
+### Memory
+
+::: synced_memory.dragonflydb.Memory
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+### PrefixedMemory
+
+::: synced_memory.dragonflydb.PrefixedMemory
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+
+## Helpers
+
 ### SyncedList
 
-::: synced_memory.redis.SyncedList
+::: synced_memory.common.SyncedList
     options:
       show_root_heading: true
       show_source: true
@@ -28,7 +66,7 @@
 
 ### SyncedDict
 
-::: synced_memory.redis.SyncedDict
+::: synced_memory.common.SyncedDict
     options:
       show_root_heading: true
       show_source: true

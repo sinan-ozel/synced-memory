@@ -28,7 +28,8 @@ allowing for multiple instances of the same pod to share their state.
 ## Quick Example
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 mem = Memory()
 mem.answer = 42

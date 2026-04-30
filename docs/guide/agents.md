@@ -1,25 +1,24 @@
-# Agent Memory
+# Scoped Memory
 
-synced-memory provides `ConversationMemory` for conversational AI agents — it namespaces
-all keys by a conversation ID so multiple conversations can share the same backend safely.
+synced-memory provides `PrefixedMemory` to isolate memory by a custom scope
+prefix — multiple scopes can share the same backend safely.
 
-## ConversationMemory Class
+## PrefixedMemory Class
 
 ```python
-from synced_memory.redis import ConversationMemory
-import uuid
+from synced_memory.redis import PrefixedMemory      # Redis
+from synced_memory.dragonflydb import PrefixedMemory  # DragonflyDB
 
-conversation_id = str(uuid.uuid4())
-mem = ConversationMemory(conversation_id=conversation_id)
+mem = PrefixedMemory(prefix="session_abc")
 ```
 
 ## Basic Usage
 
 ```python
-from synced_memory.redis import ConversationMemory
+from synced_memory.redis import PrefixedMemory      # Redis
+from synced_memory.dragonflydb import PrefixedMemory  # DragonflyDB
 
-conv_id = "conversation_123"
-mem = ConversationMemory(conversation_id=conv_id)
+mem = PrefixedMemory(prefix="user_123")
 
 mem.messages = [
     {"role": "user", "content": "Hello!"},
@@ -31,12 +30,12 @@ mem.user_name = "Alice"
 ## Accessing from Different Processes
 
 ```python
-# Agent Process 1
-mem = ConversationMemory(conversation_id="conv_123")
+# Process 1
+mem = PrefixedMemory(prefix="scope_123")
 mem.messages.append({"role": "user", "content": "What's the weather?"})
 
-# Agent Process 2 (different worker/pod)
-mem2 = ConversationMemory(conversation_id="conv_123")
+# Process 2 (different worker/pod)
+mem2 = PrefixedMemory(prefix="scope_123")
 print(mem2.messages)  # includes the message from Process 1
 ```
 
@@ -45,11 +44,11 @@ print(mem2.messages)  # includes the message from Process 1
 ### LiteLLM
 
 ```python
-from synced_memory.redis import ConversationMemory
+from synced_memory.redis import PrefixedMemory      # Redis
+from synced_memory.dragonflydb import PrefixedMemory  # DragonflyDB
 import litellm
 
-conv_id = "session_xyz"
-mem = ConversationMemory(conversation_id=conv_id)
+mem = PrefixedMemory(prefix="session_xyz")
 
 if not hasattr(mem, 'messages'):
     mem.messages = []
@@ -70,28 +69,27 @@ mem.messages.append({
 ## Multi-Agent Systems
 
 ```python
-from synced_memory.redis import ConversationMemory
-
-conv_id = "multi_agent_session"
+from synced_memory.redis import PrefixedMemory      # Redis
+from synced_memory.dragonflydb import PrefixedMemory  # DragonflyDB
 
 # Agent 1: Intent Classifier
-mem = ConversationMemory(conversation_id=conv_id)
+mem = PrefixedMemory(prefix="multi_agent_session")
 mem.detected_intent = "technical_support"
 
 # Agent 2: Router (different process)
-mem2 = ConversationMemory(conversation_id=conv_id)
+mem2 = PrefixedMemory(prefix="multi_agent_session")
 if mem2.detected_intent == "technical_support":
     mem2.assigned_specialist = "tech_agent_3"
 
 # Agent 3: Specialist (different process)
-mem3 = ConversationMemory(conversation_id=conv_id)
+mem3 = PrefixedMemory(prefix="multi_agent_session")
 if hasattr(mem3, 'assigned_specialist'):
     mem3.resolution_status = "in_progress"
 ```
 
 ## Best Practices
 
-1. Use unique conversation IDs (UUIDs or session tokens)
+1. Use unique prefixes (UUIDs, session tokens, or user IDs)
 2. Pass `.aslist()` / `.asdict()` to LLM libraries that may `deepcopy` the data
 3. Trim message history to manage context window limits
-4. Clean up old conversations to avoid unbounded backend growth
+4. Clean up old scopes to avoid unbounded backend growth

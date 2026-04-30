@@ -55,7 +55,8 @@ docker run -d -p 6379:6379 redis:7
 ## Verifying Your Setup
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 mem = Memory()
 mem.test = "Hello, synced-memory!"
@@ -82,11 +83,12 @@ synced-memory/
 ├── scripts/                # Utility scripts
 ├── src/
 │   └── synced_memory/
-│       ├── __init__.py
+│       ├── __init__.py       # Package re-exports
+│       ├── common.py         # Shared business logic
 │       ├── redis/
-│       │   └── __init__.py   # Redis backend
+│       │   └── __init__.py   # Redis backend (thin wrapper)
 │       └── dragonflydb/
-│           └── __init__.py   # DragonflyDB backend
+│           └── __init__.py   # DragonflyDB backend (thin wrapper)
 ├── tests/
 │   ├── test_redis.py         # Redis test suite
 │   └── docker-compose.yaml   # Test environment (Redis + DragonflyDB)

@@ -120,16 +120,16 @@ mem.state = {"step": 1}
 print(mem.state)  # {'step': 1}
 ```
 
-## Agents
+## Scoping
 
-Use `ConversationMemory` to namespace memory by conversation ID:
+Use `PrefixedMemory` to isolate memory by a custom scope prefix:
 
 ```python
-from synced_memory.redis import ConversationMemory
+from synced_memory.redis import PrefixedMemory
 
-conversation_id = uuid()
-mem = ConversationMemory(conversation_id=conversation_id)
-mem.messages = messages
+mem = PrefixedMemory(prefix="session_abc123")
+mem.state = {"step": 1}
+print(mem.state)  # {'step': 1}
 ```
 
 ## ⚙️ Environment Variables

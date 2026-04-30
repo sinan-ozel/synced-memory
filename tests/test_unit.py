@@ -15,7 +15,7 @@ from synced_memory.redis import SyncedDict, SyncedList
 
 BACKENDS = [
     pytest.param((MemoryFromRedis, "redis", 6379), id="redis"),
-    # pytest.param((MemoryFromDragonfly, "dragonflydb", 6379), id="dragonflydb"),
+    pytest.param((MemoryFromDragonfly, "dragonflydb", 6379), id="dragonflydb"),
 ]
 
 

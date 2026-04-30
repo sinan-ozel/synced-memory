@@ -5,7 +5,8 @@ synced-memory supports Python's context manager protocol.
 ## Basic Usage
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 with Memory() as memory:
     memory.session = "active"
@@ -47,7 +48,8 @@ except Exception as e:
 ## Combining with Other Context Managers
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 with Memory() as memory, open('log.txt', 'w') as log_file:
     memory.session_id = "abc123"
@@ -71,7 +73,8 @@ paths or run them in a thread pool:
 
 ```python
 import asyncio
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 async def async_task():
     with Memory() as memory:

@@ -69,7 +69,8 @@ REDIS_PREFIX=myapp:
 ## Verify Installation
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 mem = Memory()
 mem.test = "Hello, synced-memory!"

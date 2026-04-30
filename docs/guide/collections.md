@@ -16,7 +16,8 @@ The following operations sync automatically:
 | `insert(index, item)` | `mem.tasks.insert(0, "first")` |
 
 ```python
-from synced_memory.redis import Memory
+from synced_memory.redis import Memory      # Redis
+from synced_memory.dragonflydb import Memory  # DragonflyDB
 
 mem = Memory()
 mem.tasks = [1, 2, 3]
@@ -104,7 +105,8 @@ Both methods convert nested `SyncedList`/`SyncedDict` objects recursively.
 ## Type Checking
 
 ```python
-from synced_memory.redis import Memory, SyncedList, SyncedDict
+from synced_memory.redis import Memory
+from synced_memory.common import SyncedList, SyncedDict
 
 mem = Memory()
 mem.items = [1, 2, 3]
