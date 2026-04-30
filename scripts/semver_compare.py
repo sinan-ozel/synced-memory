@@ -1,4 +1,5 @@
 import sys
+
 from packaging.version import Version
 
 if len(sys.argv) != 3:

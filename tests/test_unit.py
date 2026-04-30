@@ -173,7 +173,9 @@ def test_set_is_non_blocking_when_backend_unavailable(Memory, monkeypatch):
     assert len(mem._queue) >= 10
 
 
-def test_queue_flush_when_backend_restored(Memory, backend, get_value, monkeypatch):
+def test_queue_flush_when_backend_restored(
+    Memory, backend, get_value, monkeypatch
+):
     """Test queueing when backend is down and flushing when it's restored."""
     _, host, port = backend
 
@@ -385,7 +387,7 @@ def test_append_to_list(Memory):
     instances."""
     mem1 = Memory()
     mem1.numbers = [1, 2]
-    assert type(mem1.numbers) == SyncedList
+    assert isinstance(mem1.numbers, SyncedList)
     mem1.numbers.append(3)
 
     mem2 = Memory()
@@ -398,7 +400,7 @@ def test_insert_to_list(Memory):
     instances."""
     mem1 = Memory()
     mem1.numbers = [1, 2, 4]
-    assert type(mem1.numbers) == SyncedList
+    assert isinstance(mem1.numbers, SyncedList)
     mem1.numbers.insert(2, 3)
 
     mem2 = Memory()
@@ -422,7 +424,7 @@ def test_update_dict(Memory):
     """Test that updating a dict attribute persists across Memory instances."""
     mem1 = Memory()
     mem1.data = {"a": 1}
-    assert type(mem1.data) == SyncedDict
+    assert isinstance(mem1.data, SyncedDict)
     mem1.data.update({"b": 2})
 
     mem2 = Memory()
@@ -448,8 +450,8 @@ def test_append_to_a_nested_list(Memory):
     instances."""
     mem1 = Memory()
     mem1.list_of_lists_of_numbers = [[1, 2], [3, 4]]
-    assert type(mem1.list_of_lists_of_numbers) == SyncedList
-    assert type(mem1.list_of_lists_of_numbers[1]) == SyncedList
+    assert isinstance(mem1.list_of_lists_of_numbers, SyncedList)
+    assert isinstance(mem1.list_of_lists_of_numbers[1], SyncedList)
     mem1.list_of_lists_of_numbers[1].append(5)
 
     mem2 = Memory()
@@ -462,12 +464,12 @@ def test_update_nested_dict(Memory):
     instances."""
     mem1 = Memory()
     mem1.data = {"a": 1, "b": {"c": 2}}
-    assert type(mem1.data["b"]) == SyncedDict
+    assert isinstance(mem1.data["b"], SyncedDict)
     mem1.data["b"].update({"d": 3})
     assert mem1.data == {"a": 1, "b": {"c": 2, "d": 3}}
 
     mem2 = Memory()
-    assert type(mem2.data["b"]) == SyncedDict
+    assert isinstance(mem2.data["b"], SyncedDict)
     assert mem2.data == {"a": 1, "b": {"c": 2, "d": 3}}
 
 

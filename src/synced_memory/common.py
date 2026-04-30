@@ -2,9 +2,10 @@ import json
 import os
 import threading
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import redis
+if TYPE_CHECKING:
+    import redis as _redis
 
 
 class SyncedList(list):
@@ -79,9 +80,7 @@ class SyncedDict(dict):
         return result
 
 
-def wrap_sync(
-    obj: list | dict, parent, topmost_key: str
-):
+def wrap_sync(obj: list | dict, parent, topmost_key: str):
     """Wrap an object to synchronize its attributes with Redis."""
     if isinstance(obj, dict):
         return SyncedDict(obj, parent, topmost_key)
@@ -173,13 +172,15 @@ class MemoryBase:
 
         self.stop_background_flush()
 
-    def _connect(self):
+    def _connect(self) -> "_redis.Redis":
         """Establish a new Redis connection.
 
         Returns:
             redis.Redis or None: A Redis client if connection works;
             otherwise None.
         """
+        import redis
+
         client = redis.Redis(
             host=self._host,
             port=self._port,
@@ -362,13 +363,17 @@ class MemoryBase:
 
         if name in self._attributes:
             return self._attributes[name]
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{name}'"
+        )
 
     def sync(self, name: str):
         """Write the current local value of an attribute to the backend (or
         queue if down)."""
         if name not in self._attributes:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
 
         self._write_to_redis_or_queue(
             name,
@@ -389,7 +394,9 @@ class MemoryBase:
             return
 
         if name not in self._attributes:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
 
         del self._attributes[name]
         if name in self._last_modified:

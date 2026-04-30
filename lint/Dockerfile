@@ -4,7 +4,7 @@ WORKDIR /workspace
 
 # Copy only pyproject.toml to install dependencies
 COPY pyproject.toml /tmp/pyproject.toml
-COPY src/synced_memory/__init__.py /tmp/src/synced_memory/__init__.py
+COPY src/synced_memory/ /tmp/src/synced_memory/
 
 RUN pip install --upgrade pip && \
     cd /tmp && \
