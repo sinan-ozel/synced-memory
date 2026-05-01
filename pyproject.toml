@@ -34,13 +34,13 @@ dev = [
     "isort>=5.0.0",           # For moving and sorting imports
     "black>=24.0.0",          # For code formatting (Black)
     "docformatter>=1.7.5",    # For formatting docstrings
-    "mike",
+    "mike",                   # Versioned docs deployment
 ]
 
 docs = [
     "mkdocs-material>=9.0.0", # Material theme for MkDocs
     "mkdocstrings[python]>=0.24.0",  # API documentation from docstrings
-    "mike",                    # Versioned docs deployment
+    "mike",                   # Versioned docs deployment
 ]
 
 publish = [
