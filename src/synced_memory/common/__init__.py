@@ -26,6 +26,10 @@ class SyncedList(list):
         super().insert(index, item)
         self._parent.sync(self._topmost_key)
 
+    def remove(self, item):
+        super().remove(item)
+        self._parent.sync(self._topmost_key)
+
     def sync(self, name: str):
         self._parent.sync(self._topmost_key)
 

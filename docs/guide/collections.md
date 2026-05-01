@@ -14,6 +14,7 @@ The following operations sync automatically:
 | `append(item)` | `mem.tasks.append("new")` |
 | `extend(iterable)` | `mem.tasks.extend(["a", "b"])` |
 | `insert(index, item)` | `mem.tasks.insert(0, "first")` |
+| `remove(item)` | `mem.tasks.remove("done")` |
 
 ```python
 from synced_memory.redis import Memory      # Redis
@@ -25,13 +26,14 @@ mem.tasks = [1, 2, 3]
 mem.tasks.append(4)       # [1, 2, 3, 4]
 mem.tasks.extend([5, 6])  # [1, 2, 3, 4, 5, 6]
 mem.tasks.insert(0, 0)    # [0, 1, 2, 3, 4, 5, 6]
+mem.tasks.remove(0)       # [1, 2, 3, 4, 5, 6]
 
 mem2 = Memory()
-print(mem2.tasks)  # [0, 1, 2, 3, 4, 5, 6]
+print(mem2.tasks)  # [1, 2, 3, 4, 5, 6]
 ```
 
 !!! warning "Unsupported in-place operations"
-    Operations not listed above (e.g. `remove`, `pop`, `sort`, `reverse`, index assignment
+    Operations not listed above (e.g. `pop`, `sort`, `reverse`, index assignment
     `mem.items[0] = x`) are inherited from `list` but **do not sync**. Re-assign the whole
     attribute after such operations:
 
