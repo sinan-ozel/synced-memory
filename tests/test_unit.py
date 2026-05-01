@@ -420,6 +420,19 @@ def test_extend_list(Memory):
 
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_remove_from_list(Memory):
+    """Test that removing an item from a list attribute persists across Memory
+    instances."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3]
+    assert isinstance(mem1.numbers, SyncedList)
+    mem1.numbers.remove(2)
+
+    mem2 = Memory()
+    assert mem2.numbers == [1, 3]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_update_dict(Memory):
     """Test that updating a dict attribute persists across Memory instances."""
     mem1 = Memory()
