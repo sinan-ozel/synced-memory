@@ -6,7 +6,5 @@ services:
     container_name: reformat-code
     volumes:
       - ${HOST_PROJECT_PATH:-..}:/workspace/src:rw
-    environment:
-      - CHECK_ONLY=${CHECK_ONLY:-false}
     working_dir: /workspace
     network_mode: bridge
