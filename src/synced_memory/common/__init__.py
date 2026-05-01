@@ -30,6 +30,11 @@ class SyncedList(list):
         super().remove(item)
         self._parent.sync(self._topmost_key)
 
+    def pop(self, index=-1):
+        item = super().pop(index)
+        self._parent.sync(self._topmost_key)
+        return item
+
     def sync(self, name: str):
         self._parent.sync(self._topmost_key)
 
@@ -63,6 +68,11 @@ class SyncedDict(dict):
     def update(self, *args, **kwargs):
         super().update(*args, **kwargs)
         self._parent.sync(self._topmost_key)
+
+    def pop(self, key, *args):
+        item = super().pop(key, *args)
+        self._parent.sync(self._topmost_key)
+        return item
 
     def sync(self, name: str):
         self._parent.sync(self._topmost_key)

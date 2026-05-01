@@ -433,6 +433,33 @@ def test_remove_from_list(Memory):
 
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_pop_from_list(Memory):
+    """Test that popping from a list attribute persists across Memory
+    instances."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3]
+    assert isinstance(mem1.numbers, SyncedList)
+    popped = mem1.numbers.pop()
+    assert popped == 3
+
+    mem2 = Memory()
+    assert mem2.numbers == [1, 2]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_pop_from_list_by_index(Memory):
+    """Test that popping by index from a list attribute persists across Memory
+    instances."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3]
+    popped = mem1.numbers.pop(0)
+    assert popped == 1
+
+    mem2 = Memory()
+    assert mem2.numbers == [2, 3]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_update_dict(Memory):
     """Test that updating a dict attribute persists across Memory instances."""
     mem1 = Memory()
@@ -442,6 +469,32 @@ def test_update_dict(Memory):
 
     mem2 = Memory()
     assert mem2.data == {"a": 1, "b": 2}
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_pop_from_dict(Memory):
+    """Test that popping a key from a dict attribute persists across Memory
+    instances."""
+    mem1 = Memory()
+    mem1.data = {"a": 1, "b": 2}
+    assert isinstance(mem1.data, SyncedDict)
+    popped = mem1.data.pop("a")
+    assert popped == 1
+
+    mem2 = Memory()
+    assert mem2.data == {"b": 2}
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_pop_from_dict_with_default(Memory):
+    """Test that popping a missing key returns the default without error."""
+    mem1 = Memory()
+    mem1.data = {"a": 1}
+    result = mem1.data.pop("missing", 42)
+    assert result == 42
+
+    mem2 = Memory()
+    assert mem2.data == {"a": 1}
 
 
 @pytest.mark.depends(on=["test_update_dict"])
