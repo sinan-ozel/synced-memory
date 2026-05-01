@@ -266,10 +266,11 @@ class MemoryBase:
             self._redis_available = False
 
     def __setattr__(self, name, value):
-        """Set an attribute. Store in backend if available, otherwise queue it.
+        """Set an attribute.
 
-        Raises:
-            TypeError: If the value is not JSON-serializable.
+        Store in backend if available, otherwise queue it.
+                Raises:
+                    TypeError: If the value is not JSON-serializable.
         """
         if name.startswith("_"):
             super().__setattr__(name, value)
