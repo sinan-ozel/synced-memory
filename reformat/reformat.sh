@@ -20,7 +20,8 @@ echo "=========================================="
 if [ "$CHECK_ONLY" = "true" ]; then
   docformatter src/
 else
-  docformatter --in-place -r src/
+  # Exit code 3 means "files were reformatted" — that's success in apply mode.
+  docformatter --in-place -r src/ || test $? -eq 3
 fi
 
 echo ""
