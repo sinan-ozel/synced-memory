@@ -354,11 +354,13 @@ class MemoryBase:
         if name not in self._attributes:
             raise AttributeError(f"'Memory' object has no attribute '{name}'")
 
+        timestamp = time.time_ns()
+        self._last_modified[name] = timestamp
         self._write_to_redis_or_queue(
             name,
             {
                 "value": self._attributes[name],
-                "last_modified": self._last_modified.get(name, 0),
+                "last_modified": timestamp,
             },
         )
 

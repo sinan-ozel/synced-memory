@@ -395,6 +395,24 @@ def test_append_to_list(Memory):
 
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_nested_list_mutation_advances_last_modified(Memory):
+    """Nested list mutations must bump _last_modified for the top-level key.
+
+    ``_set()`` updates ``_last_modified`` on assignment, but ``sync()`` must
+    refresh it before enqueueing or writing; otherwise ``memory.x = []`` then
+    ``memory.x.append(1)`` leaves a stale timestamp and conflict resolution can
+    incorrectly discard newer local changes.
+    """
+    mem = Memory()
+    mem.x = []
+    assert isinstance(mem.x, SyncedList)
+    ts_after_assign = mem._last_modified["x"]
+    time.sleep(0.01)
+    mem.x.append(1)
+    assert mem._last_modified["x"] > ts_after_assign
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_insert_to_list(Memory):
     """Test that inserting to a list attribute persists across Memory
     instances."""
