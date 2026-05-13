@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import sys
 import tempfile
 import time
 from copy import deepcopy
@@ -478,6 +479,105 @@ def test_pop_from_list_by_index(Memory):
 
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_setitem_persists(Memory):
+    """Index assignment on a SyncedList must sync the top-level attribute."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3]
+    mem1.numbers[1] = 99
+
+    mem2 = Memory()
+    assert mem2.numbers == [1, 99, 3]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_delitem_persists(Memory):
+    """Single-index deletion on a SyncedList must sync."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3]
+    del mem1.numbers[0]
+
+    mem2 = Memory()
+    assert mem2.numbers == [2, 3]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_slice_assign_persists(Memory):
+    """Slice assignment on a SyncedList must sync."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3, 4]
+    mem1.numbers[1:3] = [20, 30]
+
+    mem2 = Memory()
+    assert mem2.numbers == [1, 20, 30, 4]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_slice_delitem_persists(Memory):
+    """Slice deletion on a SyncedList must sync."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3, 4]
+    del mem1.numbers[1:3]
+
+    mem2 = Memory()
+    assert mem2.numbers == [1, 4]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_clear_persists(Memory):
+    """clear() on a SyncedList must sync."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3]
+    mem1.numbers.clear()
+
+    mem2 = Memory()
+    assert mem2.numbers == []
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_sort_persists(Memory):
+    """sort() on a SyncedList must sync."""
+    mem1 = Memory()
+    mem1.numbers = [3, 1, 4, 2]
+    mem1.numbers.sort()
+
+    mem2 = Memory()
+    assert mem2.numbers == [1, 2, 3, 4]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_reverse_persists(Memory):
+    """reverse() on a SyncedList must sync."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2, 3]
+    mem1.numbers.reverse()
+
+    mem2 = Memory()
+    assert mem2.numbers == [3, 2, 1]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_iadd_persists(Memory):
+    """In-place += on a SyncedList must sync."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2]
+    mem1.numbers += [3, 4]
+
+    mem2 = Memory()
+    assert mem2.numbers == [1, 2, 3, 4]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_list_imul_persists(Memory):
+    """In-place *= on a SyncedList must sync."""
+    mem1 = Memory()
+    mem1.numbers = [1, 2]
+    mem1.numbers *= 2
+
+    mem2 = Memory()
+    assert mem2.numbers == [1, 2, 1, 2]
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_update_dict(Memory):
     """Test that updating a dict attribute persists across Memory instances."""
     mem1 = Memory()
@@ -513,6 +613,67 @@ def test_pop_from_dict_with_default(Memory):
 
     mem2 = Memory()
     assert mem2.data == {"a": 1}
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_dict_delitem_persists(Memory):
+    """del d[key] on a SyncedDict must sync."""
+    mem1 = Memory()
+    mem1.data = {"a": 1, "b": 2}
+    del mem1.data["a"]
+
+    mem2 = Memory()
+    assert mem2.data == {"b": 2}
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_dict_clear_persists(Memory):
+    """clear() on a SyncedDict must sync."""
+    mem1 = Memory()
+    mem1.data = {"a": 1, "b": 2}
+    mem1.data.clear()
+
+    mem2 = Memory()
+    assert mem2.data == {}
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_dict_setdefault_persists(Memory):
+    """setdefault inserts must sync."""
+    mem1 = Memory()
+    mem1.data = {"a": 1}
+    assert mem1.data.setdefault("b", 2) == 2
+    assert mem1.data.setdefault("a", 99) == 1
+
+    mem2 = Memory()
+    assert mem2.data == {"a": 1, "b": 2}
+
+
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_dict_popitem_persists(Memory):
+    """popitem() on a SyncedDict must sync."""
+    mem1 = Memory()
+    mem1.data = {"only": 42}
+    k, v = mem1.data.popitem()
+    assert (k, v) == ("only", 42)
+
+    mem2 = Memory()
+    assert mem2.data == {}
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="dict |= requires Python 3.9+",
+)
+@pytest.mark.depends(on=["test_set_and_delete_attribute"])
+def test_dict_ior_persists(Memory):
+    """In-place merge |= on a SyncedDict must sync."""
+    mem1 = Memory()
+    mem1.data = {"a": 1}
+    mem1.data |= {"b": 2}
+
+    mem2 = Memory()
+    assert mem2.data == {"a": 1, "b": 2}
 
 
 @pytest.mark.depends(on=["test_update_dict"])
