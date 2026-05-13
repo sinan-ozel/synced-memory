@@ -347,7 +347,9 @@ class MemoryBase:
                         and "value" in obj
                         and "last_modified" in obj
                     ):
-                        self._attributes[name] = obj["value"]
+                        self._attributes[name] = wrap_sync(
+                            obj["value"], self, name
+                        )
                         self._last_modified[name] = obj["last_modified"]
                     else:
                         self._attributes[name] = obj

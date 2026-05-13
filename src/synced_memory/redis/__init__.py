@@ -4,15 +4,9 @@ from synced_memory.common import (
     MemoryBase,
     PrefixedMemoryBase,
 )
-from synced_memory.common import (
-    SyncedDict as SyncedDict,
-)
-from synced_memory.common import (
-    SyncedList as SyncedList,
-)
-from synced_memory.common import (
-    wrap_sync as wrap_sync,
-)
+from synced_memory.common import SyncedDict as SyncedDict
+from synced_memory.common import SyncedList as SyncedList
+from synced_memory.common import wrap_sync as wrap_sync
 
 
 class Memory(MemoryBase):

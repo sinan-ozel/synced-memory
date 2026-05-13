@@ -6,6 +6,7 @@ import tempfile
 import time
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import redis
@@ -333,6 +334,36 @@ def test_memory_loads_existing_keys_on_init(Memory):
     assert isinstance(mem2._last_modified["user"], int)
 
 
+@pytest.mark.depends(on=["test_memory_loads_existing_keys_on_init"])
+def test_nested_update_after_load_when_backend_unreachable_persists(
+    Memory, monkeypatch
+):
+    """_load_from_redis stores plain dicts; if the next read cannot reach
+    Redis, __getattr__ falls back to that cache. In-place nested updates on a
+    plain dict never call sync(), so another instance still reads the old value
+    from Redis.
+
+    After loading with wrap_sync (and a successful queue flush when writes were
+    deferred), a fresh Memory should observe ``step == 2``.
+    """
+    mem_writer = Memory()
+    mem_writer.state = {"step": 1}
+
+    mem = Memory(redis_prefix=mem_writer._prefix)
+    assert mem._attributes["state"] == {"step": 1}
+
+    with patch.object(mem, "_connect", side_effect=Exception("unreachable")):
+        assert mem.state["step"] == 1
+        mem.state["step"] = 2
+
+    mem._redis_available = True
+    if mem._queue:
+        mem._flush_queue()
+
+    mem_obs = Memory(redis_prefix=mem_writer._prefix)
+    assert mem_obs.state["step"] == 2
+
+
 def test_basic_context_set_and_get(Memory):
     """Test that values set in a `with Memory()` context are correctly
     persisted and can be retrieved in a later context block."""
@@ -524,7 +555,7 @@ def test_list_slice_delitem_persists(Memory):
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_list_clear_persists(Memory):
-    """clear() on a SyncedList must sync."""
+    """Clear() on a SyncedList must sync."""
     mem1 = Memory()
     mem1.numbers = [1, 2, 3]
     mem1.numbers.clear()
@@ -535,7 +566,7 @@ def test_list_clear_persists(Memory):
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_list_sort_persists(Memory):
-    """sort() on a SyncedList must sync."""
+    """Sort() on a SyncedList must sync."""
     mem1 = Memory()
     mem1.numbers = [3, 1, 4, 2]
     mem1.numbers.sort()
@@ -546,7 +577,7 @@ def test_list_sort_persists(Memory):
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_list_reverse_persists(Memory):
-    """reverse() on a SyncedList must sync."""
+    """Reverse() on a SyncedList must sync."""
     mem1 = Memory()
     mem1.numbers = [1, 2, 3]
     mem1.numbers.reverse()
@@ -617,7 +648,7 @@ def test_pop_from_dict_with_default(Memory):
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_dict_delitem_persists(Memory):
-    """del d[key] on a SyncedDict must sync."""
+    """Del d[key] on a SyncedDict must sync."""
     mem1 = Memory()
     mem1.data = {"a": 1, "b": 2}
     del mem1.data["a"]
@@ -628,7 +659,7 @@ def test_dict_delitem_persists(Memory):
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_dict_clear_persists(Memory):
-    """clear() on a SyncedDict must sync."""
+    """Clear() on a SyncedDict must sync."""
     mem1 = Memory()
     mem1.data = {"a": 1, "b": 2}
     mem1.data.clear()
@@ -639,7 +670,7 @@ def test_dict_clear_persists(Memory):
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_dict_setdefault_persists(Memory):
-    """setdefault inserts must sync."""
+    """Setdefault inserts must sync."""
     mem1 = Memory()
     mem1.data = {"a": 1}
     assert mem1.data.setdefault("b", 2) == 2
@@ -651,7 +682,7 @@ def test_dict_setdefault_persists(Memory):
 
 @pytest.mark.depends(on=["test_set_and_delete_attribute"])
 def test_dict_popitem_persists(Memory):
-    """popitem() on a SyncedDict must sync."""
+    """Popitem() on a SyncedDict must sync."""
     mem1 = Memory()
     mem1.data = {"only": 42}
     k, v = mem1.data.popitem()
