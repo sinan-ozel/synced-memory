@@ -19,16 +19,17 @@ The intention is to use this with agentic workflows deployed as microservices,
 allowing for multiple instances of the same pod to share their state.
 
 
-## ✨ Features
+# ✨ Features
 
 - 🔄 **Multiprocessing-safe**: All processes share the same state via Redis or DragonflyDB.
 - 🧠 **Pythonic API**: Set and get attributes as if they were regular object properties.
 - 🕰️ **Persistence**: Values survive process restarts and context blocks.
 - 🚦 **Resilient**: If the backend is down, changes are queued and flushed when it returns.
+- 🚦 **Eventually Consistent**: Latest write wins. Coarse blob is updated, no atomic merges.
 - 🧩 **Customizable**: Prefixes and conversation IDs for namespacing.
 - 🧵 **Background sync**: Queued changes are flushed automatically in the background.
 
-## 🚀 Quickstart
+# 🚀 Quickstart
 
 ```bash
 pip install synced-memory
@@ -57,6 +58,16 @@ from synced_memory.dragonflydb import Memory
 mem = Memory()
 mem.answer = 42
 ```
+
+
+
+# Intended Use Cases
+
+- conversation histories
+- logs
+- agent state
+- checkpoints
+- scratchpads
 
 ## 🧑‍💻 Context Management
 

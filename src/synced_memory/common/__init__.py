@@ -15,15 +15,26 @@ class SyncedList(list):
         self._topmost_key = topmost_key
 
     def append(self, item):
-        super().append(item)
+        super().append(
+            wrap_sync(item, self, f"{self._topmost_key}[{len(self)}]")
+        )
         self._parent.sync(self._topmost_key)
 
     def extend(self, iterable):
+        orig_len = len(self)
         super().extend(iterable)
+        for i in range(orig_len, len(self)):
+            super().__setitem__(
+                i,
+                wrap_sync(self[i], self, f"{self._topmost_key}[{i}]"),
+            )
         self._parent.sync(self._topmost_key)
 
     def insert(self, index, item):
-        super().insert(index, item)
+        super().insert(
+            index,
+            wrap_sync(item, self, f"{self._topmost_key}[{index}]"),
+        )
         self._parent.sync(self._topmost_key)
 
     def remove(self, item):
@@ -34,6 +45,48 @@ class SyncedList(list):
         item = super().pop(index)
         self._parent.sync(self._topmost_key)
         return item
+
+    def __setitem__(self, key, value):
+        if isinstance(key, slice):
+            super().__setitem__(key, value)
+        else:
+            super().__setitem__(
+                key,
+                wrap_sync(value, self, f"{self._topmost_key}[{key}]"),
+            )
+        self._parent.sync(self._topmost_key)
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        self._parent.sync(self._topmost_key)
+
+    def clear(self):
+        super().clear()
+        self._parent.sync(self._topmost_key)
+
+    def sort(self, *args, **kwargs):
+        super().sort(*args, **kwargs)
+        self._parent.sync(self._topmost_key)
+
+    def reverse(self):
+        super().reverse()
+        self._parent.sync(self._topmost_key)
+
+    def __iadd__(self, other):
+        orig_len = len(self)
+        super().__iadd__(other)
+        for i in range(orig_len, len(self)):
+            super().__setitem__(
+                i,
+                wrap_sync(self[i], self, f"{self._topmost_key}[{i}]"),
+            )
+        self._parent.sync(self._topmost_key)
+        return self
+
+    def __imul__(self, n):
+        super().__imul__(n)
+        self._parent.sync(self._topmost_key)
+        return self
 
     def sync(self, name: str):
         self._parent.sync(self._topmost_key)
@@ -62,8 +115,27 @@ class SyncedDict(dict):
         self._topmost_key = topmost_key
 
     def __setitem__(self, k, v):
-        super().__setitem__(k, v)
+        super().__setitem__(k, wrap_sync(v, self, self._topmost_key))
         self._parent.sync(self._topmost_key)
+
+    def __delitem__(self, k):
+        super().__delitem__(k)
+        self._parent.sync(self._topmost_key)
+
+    def clear(self):
+        super().clear()
+        self._parent.sync(self._topmost_key)
+
+    def setdefault(self, key, default=None):
+        if key in self:
+            return self[key]
+        self[key] = default
+        return self[key]
+
+    def popitem(self):
+        item = super().popitem()
+        self._parent.sync(self._topmost_key)
+        return item
 
     def update(self, *args, **kwargs):
         super().update(*args, **kwargs)
@@ -73,6 +145,11 @@ class SyncedDict(dict):
         item = super().pop(key, *args)
         self._parent.sync(self._topmost_key)
         return item
+
+    def __ior__(self, other):
+        super().__ior__(other)
+        self._parent.sync(self._topmost_key)
+        return self
 
     def sync(self, name: str):
         self._parent.sync(self._topmost_key)
@@ -270,7 +347,9 @@ class MemoryBase:
                         and "value" in obj
                         and "last_modified" in obj
                     ):
-                        self._attributes[name] = obj["value"]
+                        self._attributes[name] = wrap_sync(
+                            obj["value"], self, name
+                        )
                         self._last_modified[name] = obj["last_modified"]
                     else:
                         self._attributes[name] = obj
@@ -354,11 +433,13 @@ class MemoryBase:
         if name not in self._attributes:
             raise AttributeError(f"'Memory' object has no attribute '{name}'")
 
+        timestamp = time.time_ns()
+        self._last_modified[name] = timestamp
         self._write_to_redis_or_queue(
             name,
             {
                 "value": self._attributes[name],
-                "last_modified": self._last_modified.get(name, 0),
+                "last_modified": timestamp,
             },
         )
 
